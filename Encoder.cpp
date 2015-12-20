@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <map>
 #include <iostream>
+#include <iomanip>
 #include "Encoder.h"
 
 #define MSB(i) (i >> 7)
@@ -34,12 +35,16 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
     cout << "Starting encoding..." << endl;
 
-    uint8_t up = 0xFF, down = 0x0;
+    vector<char> output;
+
+    uint8_t up = 0xFF, down = 0x0; // TODO increase the width of registers used in encoding
     int range;
     int ln = 0;
 
+    char byte_of_output = 0;
+    int curr_index_in_byte = -1;
     for (Symbol* s : data) {
-        range = up - down + 1;;
+        range = up - down + 1;
         int index = indexes_in_high_values[s];
         uint8_t old_down = down;
         down = (uint8_t) (old_down + range * (index > 0 ? high_values[index - 1] : 0) / data.size());
@@ -47,9 +52,27 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
         while(1) {
             if (MSB(down) == MSB(up)) {
-                cout << MSB(down);
+
+                ++curr_index_in_byte;
+                byte_of_output <<= 1;
+                byte_of_output |= MSB(down);
+                if (curr_index_in_byte == 7) {
+                    output.push_back(byte_of_output);
+                    byte_of_output = 0;
+                    curr_index_in_byte = -1;
+                }
+
                 while (ln > 0) {
-                    cout << MSB(~down);
+
+                    ++curr_index_in_byte;
+                    byte_of_output <<= 1;
+                    byte_of_output |= MSB(~down);
+                    if (curr_index_in_byte == 7) {
+                        output.push_back(byte_of_output);
+                        byte_of_output = 0;
+                        curr_index_in_byte = -1;
+                    }
+
                     --ln;
                 }
                 down <<= 1;
@@ -64,7 +87,6 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
                 ++ln;
             } else break;
         }
-        cout << " ";
     }
 
     uint16_t dol_cpy = down;
@@ -75,12 +97,32 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
     }
     if (ind < 8) {
         for (int i = 7; i >= ind; i--) {
-            cout << MSB(down);
+            ++curr_index_in_byte;
+            byte_of_output <<= 1;
+            byte_of_output |= MSB(down);
+            if (curr_index_in_byte == 7) {
+                output.push_back(byte_of_output);
+                byte_of_output = 0;
+                curr_index_in_byte = -1;
+            }
             down <<= 1;
         }
     }
 
-    return vector<char>();
+    // if the last part of output is not a full byte (usual case),
+    // push it to the left and fill the (less significant) rest with zeros.
+    // In other words - last byte of output is padded with zeros on less significant bits.
+    if (curr_index_in_byte != -1) {
+        byte_of_output <<= (7 - curr_index_in_byte);
+        output.push_back(byte_of_output);
+    }
+
+    cout << "Encoded." << endl;
+
+    for (char c : output) {
+        cout << hex << (c & 0xFF) << " ";
+    }
+    return output;
 }
 
 
