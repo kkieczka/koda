@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
     // char buf[] = {'a', 'e', 'f', 'g', 'a', 'b', 'c', 'x', 'w', 'b', 'a'};
-    std::string str = "ARYTMETYKA";
+    std::string str = "to jest jakis dluzszy test";
 
     std::vector<Symbol*> entry_data;
     for (unsigned i = 0; i < str.length(); i++) {
@@ -16,4 +16,5 @@ int main(int argc, char** argv) {
 
     Encoder encoder;
     encoder.encode(entry_data);
+
 }

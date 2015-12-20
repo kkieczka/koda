@@ -12,6 +12,7 @@ class Encoder {
 
 public:
     vector<char> encode(vector<Symbol*> data);
+    void decode(vector<char> input, int size, unordered_map<Symbol*, int, HashFunction, EqualFunction> indexes_in_high_values, vector<int> high_values);
 
     Encoder() : probabilities_(nullptr), counts_(nullptr) {}
 
@@ -20,7 +21,7 @@ public:
 private:
     unordered_map<Symbol*, double>* probabilities_;
     map<Symbol*, int, LessThanFunction>* counts_;
-
+    //unordered_map<Symbol*, int, HashFunction, EqualFunction>* counts_;
     void calculateProbabilities(vector<Symbol*> data);
 };
 
