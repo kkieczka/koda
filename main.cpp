@@ -5,15 +5,14 @@
 #include "Encoder.h"
 
 int main(int argc, char** argv) {
-    char buf[] = {'a', 'e', 'f', 'g', 'a', 'b', 'c', 'x', 'w', 'b', 'a'};
+    // char buf[] = {'a', 'e', 'f', 'g', 'a', 'b', 'c', 'x', 'w', 'b', 'a'};
+    std::string str = "ARYTMETYKA";
 
     std::vector<Symbol*> entry_data;
-    for (int i = 0; i < 11; i++) {
-        Character* c = new Character(buf[i]);
+    for (unsigned i = 0; i < str.length(); i++) {
+        Character* c = new Character(str.at(i));
         entry_data.push_back(c);
     }
-    EqualFunction f;
-    std::cout << (f(entry_data[10], entry_data[4])) << std::endl;
 
     Encoder encoder;
     encoder.encode(entry_data);

@@ -17,6 +17,7 @@ public:
     bool operator==(const Symbol &symbol);
     std::string toString();
     std::string stringRepresentation() const;
+    bool operator<(Symbol const &symbol);
 
 private:
     char val_; // actual ASCII character

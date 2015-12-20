@@ -10,6 +10,7 @@ class Symbol {
 public:
     virtual bool operator==(const Symbol&) = 0;
     virtual std::string toString() = 0;
+    virtual bool operator<(Symbol const &q) = 0;
 
     // must be constant for symbols with the same meaning - it is used during hashcode calculation
     virtual std::string stringRepresentation() const = 0;
@@ -28,6 +29,13 @@ class HashFunction {
 public:
     std::size_t operator()(Symbol const* s) const {
         return std::hash<std::string>()(s->stringRepresentation());
+    }
+};
+
+class LessThanFunction {
+public:
+    bool operator()(Symbol *s1, Symbol *s2) const {
+        return (*s1) < *(s2);
     }
 };
 
