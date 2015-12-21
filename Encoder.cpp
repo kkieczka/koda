@@ -6,9 +6,12 @@
 #include "Encoder.h"
 #include "Character.h"
 
-#define MSB(i) (i >> 7)
-#define MS2B(i) (i >> 6)
+#define MSB(i) (i >> 15)
+#define MS2B(i) (i >> 14)
 #define LSB(i) (i & 0x01)
+
+//#define DEBUG
+//#define VERBOSE
 
 using namespace std;
 
@@ -43,7 +46,7 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
     vector<char> output;
 
-    uint8_t up = 0xFF, down = 0x0; // TODO increase the width of registers used in encoding
+    uint16_t up = 0xFFFF, down = 0x0000;
     int range;
     int ln = 0;
 
@@ -52,12 +55,12 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
     for (Symbol* s : data) {
         range = up - down + 1;
         int index = (*indexes_in_high_values)[s];
-        uint8_t old_down = down;
-        down = (uint8_t) (old_down + range * (index > 0 ? (*high_values)[index - 1] : 0) / data.size());
-        up = (uint8_t) (old_down + range * (*high_values)[index] / data.size() - 1);
+        uint16_t old_down = down;
+        down = (uint16_t) (old_down + range * (index > 0 ? (*high_values)[index - 1] : 0) / data.size());
+        up = (uint16_t) (old_down + range * (*high_values)[index] / data.size() - 1);
 
 #ifdef DEBUG
-        cout << "down: " << bitset<8>(down) << "(" << dec << (int)down << "), up: " << bitset<8>(up) << "(" << dec << (int)up << ") (" << s->toString() << ")" << endl;
+        cout << "down: " << bitset<16>(down) << "(" << dec << (int)down << "), up: " << bitset<16>(up) << "(" << dec << (int)up << ") (" << s->toString() << ")" << endl;
 #endif
         while(1) {
             if (MSB(down) == MSB(up)) {
@@ -78,9 +81,9 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
                     ++curr_index_in_byte;
                     byte_of_output <<= 1;
-                    byte_of_output |= MSB((uint8_t)(~down));
+                    byte_of_output |= MSB((uint16_t)(~down));
 #ifdef DEBUG
-                    cout << "out " << hex << MSB((uint8_t)(~down)) << endl;
+                    cout << "out " << hex << MSB((uint16_t)(~down)) << endl;
 #endif
                     if (curr_index_in_byte == 7) {
                         output.push_back(byte_of_output);
@@ -90,21 +93,13 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
                     --ln;
                 }
-                //down <<= 1;
-                //up <<= 1;
-                //up |= 1;
 
-            } else if (MS2B(down) == (uint8_t)0x1 && MS2B(up) == (uint8_t)0x2) {
+            } else if (MS2B(down) == (uint16_t)0x1 && MS2B(up) == (uint16_t)0x2) {
 #ifdef DEBUG
                 cout << "E3" << endl;
 #endif
-                //down <<= 1;
-                //down &= 0x7F;
-                //up <<= 1;
-                //up |= 0x80;
-                //up |= 1;
-                down &= 0x3F;
-                up |= 0x40;
+                down &= 0x3FFF;
+                up |= 0x4000;
                 //cout << "-- down: " << bitset<8>(down) << "(" << (int)down << "), up: " << bitset<8>(up) << "(" << (int)up << ")" << endl;
                 ++ln;
             } else break;
@@ -113,7 +108,7 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
             up <<= 1;
             up |= 1;
 #ifdef DEBUG
-            cout << "-- down: " << bitset<8>(down) << "(" << dec << (int)down << "), up: " << bitset<8>(up) << "(" << dec << (int)up << ")" << endl;
+            cout << "-- down: " << bitset<16>(down) << "(" << dec << (int)down << "), up: " << bitset<16>(up) << "(" << dec << (int)up << ")" << endl;
 #endif
         }
     }
@@ -122,9 +117,9 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
     ++curr_index_in_byte;
     byte_of_output <<= 1;
-    byte_of_output |= (MS2B((uint8_t)(down)) & 0x1);
+    byte_of_output |= (MS2B((uint16_t)(down)) & 0x1);
 #ifdef DEBUG
-    cout << "out " << hex << (MS2B((uint8_t)(down)) & 0x1) << endl;
+    cout << "out " << hex << (MS2B((uint16_t)(down)) & 0x1) << endl;
 #endif
     if (curr_index_in_byte == 7) {
         output.push_back(byte_of_output);
@@ -138,9 +133,9 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
 
         ++curr_index_in_byte;
         byte_of_output <<= 1;
-        byte_of_output |= (MS2B((uint8_t)(~down)) & 0x1);
+        byte_of_output |= (MS2B((uint16_t)(~down)) & 0x1);
 #ifdef DEBUG
-        cout << "out " << hex << (MS2B((uint8_t)(~down)) & 0x1) << endl;
+        cout << "out " << hex << (MS2B((uint16_t)(~down)) & 0x1) << endl;
 #endif
         if (curr_index_in_byte == 7) {
             output.push_back(byte_of_output);
@@ -152,43 +147,16 @@ vector<char> Encoder::encode(vector<Symbol*> data) {
     }
 
 
-/*    uint16_t dol_cpy = down;
-    int ind;
-    for (ind = 0; ind < 8; ind++) {
-        if (LSB(dol_cpy) == 1) break;
-        dol_cpy >>= 1;
-    }
-    if (ind < 8) {
-        for (int i = 7; i >= ind; i--) {
-            ++curr_index_in_byte;
-            byte_of_output <<= 1;
-            byte_of_output |= MSB(down); cout << "out " << hex << MSB(down) << endl;
-            if (curr_index_in_byte == 7) {
-                output.push_back(byte_of_output);
-                byte_of_output = 0;
-                curr_index_in_byte = -1;
-            }
-            down <<= 1;
-        }
-    }
-*/
-
-
     // if the last part of output is not a full byte (usual case),
     // push it to the left and fill the (less significant) rest with zeros.
     // In other words - last byte of output is padded with zeros on less significant bits.
 #ifdef DEBUG
-    cout << "byte of output before changes: " << bitset<8>((uint8_t)byte_of_output) << endl;
+    cout << "byte of output before changes: " << bitset<16>((uint16_t)byte_of_output) << endl;
 #endif
     if (curr_index_in_byte != -1) {
         byte_of_output <<= (7 - curr_index_in_byte);
-//        int to_move = 7 - curr_index_in_byte;
-//        for (int i = 0; i < to_move; i++) {
-//            byte_of_output <<= 1;
-//            byte_of_output |= 1;
-//        }
 #ifdef DEBUG
-        cout << "byte of output after changes: " << bitset<8>((uint8_t)byte_of_output) << endl;
+        cout << "byte of output after changes: " << bitset<16>((uint16_t)byte_of_output) << endl;
 #endif
         output.push_back(byte_of_output);
     }
@@ -223,17 +191,29 @@ vector<Symbol*> Encoder::decode(vector<char> input, int size) {
 
     int bits_read = 0;
 
-    uint8_t code = static_cast<uint8_t>(input[curr_input_byte++]);
-    bits_read += 8;
-    uint8_t up = 0xFF, down = 0x0;
+    uint16_t b1 = (uint16_t)input[curr_input_byte];
+    //cout << bitset<16>(b1) << endl;
+    uint16_t b2 = (uint16_t)(input[curr_input_byte+1] & 0x00FF);
+    //cout << bitset<16>(b2) << endl;
+
+    //cout << bitset<16>(b1 << 8 | b2) << endl;
+
+    uint16_t code = static_cast<uint16_t>(b1 << 8 | b2);
+#ifdef DEBUG
+    cout << "\ncode = " << bitset<16>(code);
+#endif
+    curr_input_byte += 2;
+    bits_read += 16;
+    uint16_t up = 0xFFFF, down = 0x0;
 
 
     for (int t = 0; t < size; t++) {
 
         int range = (up - down) + 1;
         int temp = ((((code - down) + 1) * size) - 1) / range; //( ( code - low ) + 1 ) * scale)  - 1 ) / range )
-
-        //cout << "\ntemp = " << temp;
+#ifdef DEBUG
+        cout << "\ntemp = " << temp;
+#endif
 
         int ind = 0;
         while (temp >= (*high_values)[ind]) ind++;
@@ -246,22 +226,24 @@ vector<Symbol*> Encoder::decode(vector<char> input, int size) {
                 break;
             }
         }
-
+#ifdef DEBUG
+        cout << "out " << s->toString() << endl;
+#endif
         output.push_back(s);
 
 
-        uint8_t old_down = down;
+        uint16_t old_down = down;
         int index = (*indexes_in_high_values)[s];
-        down = (uint8_t) (old_down + range * (index > 0 ? (*high_values)[index - 1] : 0) / size);
-        up = (uint8_t) (old_down + range * (*high_values)[index] / size - 1);
+        down = (uint16_t) (old_down + range * (index > 0 ? (*high_values)[index - 1] : 0) / size);
+        up = (uint16_t) (old_down + range * (*high_values)[index] / size - 1);
 
         while (1) {
             if (MSB(up) == MSB(down)) {
                 // shift
             } else if (MS2B(down) == 0x1 && MS2B(up) == 0x2) {
-                code = (uint8_t) (code ^ 0x40);
-                down &= 0x3F;
-                up |= 0x40;
+                code = (uint16_t) (code ^ 0x4000);
+                down &= 0x3FFF;
+                up |= 0x4000;
                 // shift
             } else break;
 
@@ -274,7 +256,9 @@ vector<Symbol*> Encoder::decode(vector<char> input, int size) {
                 curr_input_byte++;
             }
             code |= ((input[curr_input_byte] >> (7 - curr_input_bit)) & 0x1);
-            //cout << "\ncode = " << bitset<8>(code);
+#ifdef DEBUG
+            cout << "\ncode = " << bitset<16>(code);
+#endif
             curr_input_bit++;
             bits_read++;
         }

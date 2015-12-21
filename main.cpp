@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
     srand(0);
     for (int test = 0; test < TESTCASES; test++) {
-        int size = 78;//(rand() + 1) % 90;
+        int size = (rand() + 1) % 1000;
         cout << "[" << test << "] len = " << size << endl;
         vector<Symbol*> testVec;
         cout << "i: ";
