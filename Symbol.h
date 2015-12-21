@@ -9,6 +9,7 @@
 class Symbol {
 public:
     virtual bool operator==(const Symbol&) = 0;
+    virtual bool operator!=(const Symbol&) = 0;
     virtual std::string toString() = 0;
     virtual bool operator<(Symbol const &q) = 0;
 

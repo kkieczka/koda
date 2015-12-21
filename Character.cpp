@@ -13,6 +13,10 @@ bool Character::operator==(const Symbol & symbol) {
     }
 }
 
+bool Character::operator!=(const Symbol & symbol) {
+    return !(*this == symbol);
+}
+
 std::string Character::toString() {
     return std::string(1, this->val_);
 }

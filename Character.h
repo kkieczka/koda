@@ -15,6 +15,7 @@ public:
     ~Character() {}
 
     bool operator==(const Symbol &symbol);
+    bool operator!=(const Symbol&);
     std::string toString();
     std::string stringRepresentation() const;
     bool operator<(Symbol const &symbol);
